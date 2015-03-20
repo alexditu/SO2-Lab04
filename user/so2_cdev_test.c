@@ -48,6 +48,7 @@ static void usage(const char *argv0)
 int main(int argc, char **argv)
 {
 	int fd;
+	int ret;
 
 	if (argc < 2)
 		usage(argv[0]);
@@ -55,17 +56,27 @@ int main(int argc, char **argv)
 	if (strlen(argv[1]) != 1)
 		usage(argv[0]);
 
+	fd = open (DEVICE_PATH, O_RDONLY);
+
+	char buf[BUFFER_SIZE] = "ANA ARE MERE ROSII\n\0";
+
 	switch (argv[1][0]) {
 	case 'p':				/* print */
+		ret = ioctl(fd, MY_IOCTL_PRINT);
+		if (ret < 0) {
+			printf("Error!\n");
+		}
 
 		break;
 	case 's':				/* set buffer */
 		if (argc < 3)
 			usage(argv[0]);
+		ioctl(fd, MY_IOCTL_SET_BUFFER, argv[2]);
 
 		break;
 	case 'g':				/* get buffer */
-
+		ioctl(fd, MY_IOCTL_GET_BUFFER, buf);
+		printf("User: got buffer: %s\n", buf);
 		break;
 	case 'd':				/* down */
 

@@ -39,9 +39,10 @@ static int cdev_read(struct file *file, char __user *user_buf, size_t size,
 			loff_t *offset);
 static int cdev_write(struct file *file, const char __user *user_buf,
 			size_t size, loff_t *offset);
+static long cdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
 
-static char buffer[BUFSIZ] = MESSAGE;
+static char buffer[BUFFER_SIZE] = MESSAGE;
 static atomic_t atomic;
 
 struct cdev my_cdev;
@@ -52,6 +53,7 @@ struct file_operations my_fops = {
 	.release	= cdev_release,
 	.read		= cdev_read,
 	.write		= cdev_write,
+	.unlocked_ioctl = cdev_ioctl,
 };
 
 static int cdev_open(struct inode *inode, struct file *file)
@@ -89,23 +91,23 @@ static int cdev_read(struct file *file, char __user *user_buf,
 			size_t size, loff_t *offset)
 {
 	int ret;
-	long unsigned off;
+	int sz;
 
-	ret = copy_to_user(user_buf, buffer, strlen(buffer));
-	if (ret != 0) {
-		printk("Error copy_to_user: %d\n", ret);
-		return -EFAULT;
+
+	if (*offset == 0) {
+		sz = strlen(buffer);
+		ret = copy_to_user(user_buf, buffer, sz);
+		if (ret != 0) {
+			printk("Error copy_to_user: %d\n", ret);
+			return -EFAULT;
+		}
+		*offset += sz;
+		return sz;
+	} else {
+		return 0;
 	}
 
-	// ret = copy_from_user(&off, offset, sizeof(loff_t));
-	// if (ret != 0) {
-	// 	printk("Error copy_from_user: %d\n", ret);
-	// 	return -EFAULT;
-	// } else {
-	// 	printk("Offset is: %lu\n", off);
-	// }
-
-	return strlen(buffer);
+	// return strlen(buffer);
 }
 
 static int cdev_write(struct file *file, const char __user *user_buf,
@@ -120,9 +122,33 @@ static int cdev_write(struct file *file, const char __user *user_buf,
 	}
 
 	buffer[size] = '\0';
+	*offset += size;
 	printk("Buffer is: %s\n", buffer);
 
 	return size;
+}
+
+static long cdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret;
+
+	switch(cmd) {
+	case MY_IOCTL_PRINT:
+		printk(LOG_LEVEL "IOCTL: %s\n", IOCTL_MESSAGE);
+		break;
+
+	case MY_IOCTL_SET_BUFFER:
+		ret = copy_from_user(buffer, (void *)arg, BUFFER_SIZE);
+		printk(LOG_LEVEL "Got from user: %s\n", buffer);
+		break;
+
+	case MY_IOCTL_GET_BUFFER:
+		ret = copy_to_user((void *)arg, buffer, BUFFER_SIZE);
+		printk(LOG_LEVEL "Sent buffer to user\n");
+		break;
+	}
+
+	return 0;
 }
 
 static int so2_cdev_init(void)

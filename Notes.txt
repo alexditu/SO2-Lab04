@@ -1,0 +1,22 @@
+Pseudo devices: /dev/null, /dev/urandom -> pot face comunicare user_space kernel_space
+	prin aceste dispozitive
+				/dev/kvm -> comunicare dintre user si controllerul din kernel pentru
+							kvm
+				/dev/poll
+
+* De ce sa fol devices in loc de un nou apel de sistem: e mai simplu/flexibil pt ca
+__nu tb sa schimb ABI__7 (care ne reglementeaza cum sa impl anumite functii)
+
+
+* Socketi netlink comunica intre user si kernel
+
+/proc
+/sysfs
+
+* Device drivere:
+	- am nevoie sa comunic cu un device fizic
+	- sau vreau sa comunic cu kernel-ul
+
+* Char dev vs block dev
+	Pe char nu pot sa fac seek; dar pot cere mai multe blocuri 
+	din zone diferite, in aprox acelasi timp
